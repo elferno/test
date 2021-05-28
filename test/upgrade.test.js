@@ -23,8 +23,6 @@ contract('upgrade', ([_, proxyOwner, user]) => {
 
 		const data = compileData(token_v1, 'initialize',  ['MyToken', 'MTK'])
 		proxy = await MyProxy.new(token_v1.address, proxy_admin.address, data)
-
-		//await proxy_admin.changeProxyAdmin(proxy.address, proxyOwner)
 	})
 
 	// Test case
@@ -42,10 +40,9 @@ contract('upgrade', ([_, proxyOwner, user]) => {
 		
 
 		// upgrade our countract to next version
-		//const data = compileData(token_v2, 'initialize', ['MyTokenV2', 'MTK', 42])
+		//const data = compileData(token_v2, 'initialize', ['MyTokenV2', 'MTK'])
 		//await proxy_admin.upgradeAndCall(proxy.address, token_v2.address, data)
 		await proxy_admin.upgrade(proxy.address, token_v2.address)
-		//await proxy.upgradeTo(token_v2.address, {from: proxyOwner})
 		
 		
 		// call function from V.2
@@ -54,6 +51,22 @@ contract('upgrade', ([_, proxyOwner, user]) => {
 		_constant = (await token.testConstant({from: user})).toString()
 		expect(_buyResult).to.equal('v.2 - "buyToken" function works!')
 		expect(_constant).to.equal('2')
+
+
+
+
+		// не только proxyAdmin, но и owner контракта Proxy может вызывать upgrade
+		await proxy_admin.changeProxyAdmin(proxy.address, proxyOwner)
+
+		// rollback contract version
+		await proxy.upgradeTo(token_v1.address, {from: proxyOwner})
+
+		// call function from again V.1
+		token = await Token_v1.at(proxy.address)
+		_buyResult = (await token.buyToken({from: user})).toString()
+		_constant = (await token.testConstant({from: user})).toString()
+		expect(_buyResult).to.equal('v.1 - "buyToken" function is broken')
+		expect(_constant).to.equal('1')
 	})
 })
 
