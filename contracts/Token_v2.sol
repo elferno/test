@@ -10,12 +10,12 @@ contract Token_v2 is ERC20Upgradeable {
         string memory _name,
         string memory _symbol,
         uint256 _new_test_value
-    ) public {
+    ) public initializer {
         __ERC20_init(_name, _symbol);
         _test_value = _new_test_value;
     }
 
     function getValue(uint256 _add) public view returns (uint256) {
-        return _test_value * _add;
+        return _test_value + _add;
     }
 }
