@@ -50,7 +50,11 @@ contract('upgrade', ([_, proxyOwner, user]) => {
 		_buyResult = (await token.buyToken({from: user})).toString()
 		_constant = (await token.testConstant({from: user})).toString()
 		expect(_buyResult).to.equal('v.2 - "buyToken" function works!')
+		// константы меняются каждый раз при upgrade, потому что не сохраняются в сторейдж Proxy
 		expect(_constant).to.equal('2')
+		// а вот initialized сохраняется, поэтому я не могу выполнить строки 43-44
+		// было бы удобно, если бы initialized сбрасывалось в false при upgrade :))
+		// но, получается я просто не смог пока что придумать правильную реализацию для этого момента
 
 
 
@@ -58,7 +62,7 @@ contract('upgrade', ([_, proxyOwner, user]) => {
 		// не только proxyAdmin, но и owner контракта Proxy может вызывать upgrade
 		await proxy_admin.changeProxyAdmin(proxy.address, proxyOwner)
 
-		// rollback contract version
+		// rollback contract version to V.1
 		await proxy.upgradeTo(token_v1.address, {from: proxyOwner})
 
 		// call function from again V.1
