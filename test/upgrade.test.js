@@ -9,7 +9,7 @@ const Token_v1 = artifacts.require('Token_v1')
 const Token_v2 = artifacts.require('Token_v2')
 
 // Start test block
-contract('upgrade', ([user]) => {
+contract('upgrade', ([_, proxyOwner, user]) => {
 	// var
 	let token_v1,
 		token_v2,
@@ -21,16 +21,20 @@ contract('upgrade', ([user]) => {
 		proxy_admin = await MyProxyAdmin.new()
 		token_v1 = await Token_v1.new()
 
-		//admin = adminProxy.address
-		const data = compileData(token_v1, 'initialize',  ['MyToken', 'MTK', 42])
+		const data = compileData(token_v1, 'initialize',  ['MyToken', 'MTK'])
 		proxy = await MyProxy.new(token_v1.address, proxy_admin.address, data)
+
+		//await proxy_admin.changeProxyAdmin(proxy.address, proxyOwner)
 	})
 
 	// Test case
-	it('get value from version 1', async function () {
-		// call function from V.1, expect return "42"
+	it('get value from version 1 and 2', async function () {
+		// call function from V.1
 		let token = await Token_v1.at(proxy.address)
-		expect((await token.getValue({from: user})).toString()).to.equal('42')
+		let _buyResult = (await token.buyToken({from: user})).toString()
+		let _constant = (await token.testConstant({from: user})).toString()
+		expect(_buyResult).to.equal('v.1 - "buyToken" function is broken')
+		expect(_constant).to.equal('1')
 
 
 		// deploy next version of token
@@ -41,11 +45,15 @@ contract('upgrade', ([user]) => {
 		//const data = compileData(token_v2, 'initialize', ['MyTokenV2', 'MTK', 42])
 		//await proxy_admin.upgradeAndCall(proxy.address, token_v2.address, data)
 		await proxy_admin.upgrade(proxy.address, token_v2.address)
+		//await proxy.upgradeTo(token_v2.address, {from: proxyOwner})
 		
 		
-		// call function from V.2, expect return "43"
+		// call function from V.2
 		token = await Token_v2.at(proxy.address)
-		expect((await token.getValue(1, {from: user})).toString()).to.equal('43')
+		_buyResult = (await token.buyToken({from: user})).toString()
+		_constant = (await token.testConstant({from: user})).toString()
+		expect(_buyResult).to.equal('v.2 - "buyToken" function works!')
+		expect(_constant).to.equal('2')
 	})
 })
 
